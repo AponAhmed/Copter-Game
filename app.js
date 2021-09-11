@@ -19,6 +19,7 @@ canvas.addEventListener("mousemove", (e) => {
 //Defence
 const mainDef = new Image(100, 104);
 mainDef.src = "res/defence/main.png";
+const mainAudio=new Audio("res/audio/def1.wav");
 const DefenceArr = [];
 class Defence {
   constructor(x, y) {
@@ -27,6 +28,8 @@ class Defence {
     this.size = 10;
     this.color = "red";
     this.speed = 5;
+    mainAudio.currentTime = 0;
+    mainAudio.play();
   }
   update() {
     if (this.x > 0) {
@@ -74,15 +77,15 @@ class Copter {
   }
 
   drow() {
-    ctx.fillStyle = "white";
+    /*ctx.fillStyle = "white";
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fill();*/
     ctx.drawImage(copterLeft, this.x - (100 / 2 + 7), this.y - (104 / 2 - 5));
   }
 
   trigerDefence() {
-    DefenceArr.push(new Defence(this.x, this.y));
+    DefenceArr.push(new Defence(this.x + 75, this.y -85));
   }
 }
 
@@ -120,7 +123,7 @@ class Enemy {
     this.speed = Math.random() * -5 + -1;
     this.distance;
     this.imageDir = "res/enemy/";
-    this.images = ["ast1.png", "ast2.png"];
+    this.images = ["ast1.png", "ast2.png","ast3.png"];
     this.img =
       this.imageDir +
       this.images[Math.floor(Math.random() * this.images.length)];
@@ -136,12 +139,12 @@ class Enemy {
     this.distance = Math.sqrt(dx * dx + dy * dy);
   }
   draw() {
-    ctx.fillStyle = "blue";
+    /*ctx.fillStyle = "blue";
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-
+    */
     enemy.src = this.img;
     ctx.drawImage(
       enemy,
