@@ -1,7 +1,35 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-let gameFrame = 0;
+//Game Lavel Design
+const GameLevel = {
+  L1: {
+    label: "Lavel 1",
+    enemySpeed: 5,
+    enemyPerFream: 50,
+    copter: "copter1",
+    bg:"bg1",
+    mainDefSpeed: 5,
+  },
+  L2: {
+    label: "Lavel 2",
+    enemySpeed: 7,
+    enemyPerFream: 30,
+    copter: "copter2",
+    bg:"bg2",
+    mainDefSpeed: 7,
+  },
+  L3: {
+    label: "Lavel 3",
+    enemySpeed: 12,
+    enemyPerFream: 10,
+    copter: "copter3",
+     bg:"bg3",
+    mainDefSpeed: 10,
+  },
+};
+var currentLevel = GameLevel.L1;
 
+let gameFrame = 0;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 window.addEventListener("resize", function () {
@@ -19,7 +47,7 @@ canvas.addEventListener("mousemove", (e) => {
 //Defence
 const mainDef = new Image(100, 104);
 mainDef.src = "res/defence/main.png";
-const mainAudio=new Audio("res/audio/def1.wav");
+const mainAudio = new Audio("res/audio/def1.wav");
 const DefenceArr = [];
 class Defence {
   constructor(x, y) {
@@ -27,7 +55,7 @@ class Defence {
     this.y = y;
     this.size = 10;
     this.color = "red";
-    this.speed = 5;
+    this.speed = currentLevel.mainDefSpeed;
     mainAudio.currentTime = 0;
     mainAudio.play();
   }
@@ -85,12 +113,12 @@ class Copter {
   }
 
   trigerDefence() {
-    DefenceArr.push(new Defence(this.x + 75, this.y -85));
+    DefenceArr.push(new Defence(this.x + 75, this.y - 85));
   }
 }
 
 const copter = new Copter();
-console.log(copter);
+//console.log(copter);
 canvas.addEventListener("click", (e) => {
   copter.trigerDefence();
 });
@@ -104,7 +132,7 @@ function handleDefance() {
     for (i = 0; i < DefenceArr.length; i++) {
       DefenceArr[i].update();
       DefenceArr[i].drow();
-      console.log(DefenceArr[i].y, DefenceArr[i].x);
+      //console.log(DefenceArr[i].y, DefenceArr[i].x);
       if (DefenceArr[i].y <= 0 || DefenceArr[i].x >= window.width) {
         DefenceArr.splice(i, 1);
       }
@@ -120,10 +148,10 @@ class Enemy {
     this.x = Math.random() * (canvas.width * 2);
     this.y = 0 - 50 - (Math.random() * canvas.height) / 2;
     this.radius = 25;
-    this.speed = Math.random() * -5 + -1;
+    this.speed = Math.random() * -currentLevel.enemySpeed + -1;
     this.distance;
     this.imageDir = "res/enemy/";
-    this.images = ["ast1.png", "ast2.png","ast3.png"];
+    this.images = ["ast1.png", "ast2.png", "ast3.png"];
     this.img =
       this.imageDir +
       this.images[Math.floor(Math.random() * this.images.length)];
@@ -174,7 +202,7 @@ function handleEnemy() {
     enemyArray[i].update();
     enemyArray[i].draw();
   }
-  if (gameFrame % 50 == 0) {
+  if (gameFrame % currentLevel.enemyPerFream == 0) {
     enemyArray.push(new Enemy());
   }
 }
