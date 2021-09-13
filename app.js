@@ -7,7 +7,7 @@ const GameLevel = {
     enemySpeed: 5,
     enemyPerFream: 50,
     copter: "copter1",
-    bg:"bg1",
+    bg: "bg1",
     mainDefSpeed: 5,
   },
   L2: {
@@ -15,7 +15,7 @@ const GameLevel = {
     enemySpeed: 7,
     enemyPerFream: 30,
     copter: "copter2",
-    bg:"bg2",
+    bg: "bg2",
     mainDefSpeed: 7,
   },
   L3: {
@@ -23,7 +23,7 @@ const GameLevel = {
     enemySpeed: 12,
     enemyPerFream: 10,
     copter: "copter3",
-     bg:"bg3",
+    bg: "bg3",
     mainDefSpeed: 10,
   },
 };
@@ -45,6 +45,10 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 //Defence
+const defenceObjects = [
+  { name: "Main Defence", damageCapability: 10, image: "main.png" },
+  { name: "Fire Astroyed", damageCapability: 20, image: "def2.png" },
+];
 const mainDef = new Image(100, 104);
 mainDef.src = "res/defence/main.png";
 const mainAudio = new Audio("res/audio/def1.wav");
@@ -88,6 +92,7 @@ class Copter {
     this.y = mouse.y;
     this.size = 65;
     this.angle = 0;
+    this.life = 100;
   }
 
   update() {
@@ -126,6 +131,7 @@ canvas.addEventListener("click", (e) => {
 function handleCopter() {
   copter.update();
   copter.drow();
+  console.log(copter.life);
 }
 function handleDefance() {
   if (DefenceArr.length > 0) {
@@ -140,7 +146,13 @@ function handleDefance() {
   }
 }
 
-// Enemys
+// Enemis
+const enemyObjects = [
+  { name: "Astroyed", damageCapability: 10, image: "ast1.png" },
+  { name: "Fire Astroyed", damageCapability: 20, image: "ast2.png" },
+  { name: "Small Fire Astroyed", damageCapability: 5, image: "ast3.png" },
+];
+
 const enemyArray = [];
 const enemy = new Image();
 class Enemy {
@@ -151,13 +163,13 @@ class Enemy {
     this.speed = Math.random() * -currentLevel.enemySpeed + -1;
     this.distance;
     this.imageDir = "res/enemy/";
-    this.images = ["ast1.png", "ast2.png", "ast3.png"];
-    this.img =
-      this.imageDir +
-      this.images[Math.floor(Math.random() * this.images.length)];
+    this.type = enemyObjects[Math.floor(Math.random() * enemyObjects.length)];
+    //this.img =this.imageDir + this.images[Math.floor(Math.random() * this.images.length)];
+    this.img = this.imageDir + this.type.image;
     this.frameX = 0;
     this.spriteWidth = 50;
     this.spriteHeight = 50;
+    this.hited = false;
   }
   update() {
     this.x += this.speed;
@@ -165,6 +177,7 @@ class Enemy {
     const dx = this.x - copter.x;
     const dy = this.y - copter.y;
     this.distance = Math.sqrt(dx * dx + dy * dy);
+    //console.log(this.distance);
   }
   draw() {
     /*ctx.fillStyle = "blue";
@@ -194,7 +207,13 @@ function handleEnemy() {
     }
   }
   for (let i = 0; i < enemyArray.length; i++) {
-    if (enemyArray[i].distance < enemyArray[i].radius + copter.radius) {
+    if (enemyArray[i].distance < enemyArray[i].radius + copter.size) {
+      //console.log("Hited the Copter");
+      if (!enemyArray[i].hited) {
+        //Damage Copter Life
+        copter.life -= enemyArray[i].type.damageCapability;
+        enemyArray[i].hited = true;
+      }
       enemyArray.splice(i, 1);
     }
   }
@@ -205,6 +224,7 @@ function handleEnemy() {
   if (gameFrame % currentLevel.enemyPerFream == 0) {
     enemyArray.push(new Enemy());
   }
+  //console.log(enemyArray.length);
 }
 
 function animate() {
@@ -215,7 +235,6 @@ function animate() {
   handleEnemy();
   handleDefance();
   gameFrame++;
-  //console.log(particleArr.length);
   requestAnimationFrame(animate);
 }
 animate();
