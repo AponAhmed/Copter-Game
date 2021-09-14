@@ -1,5 +1,7 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+//
+var score = 0;
 //Game Lavel Design
 const GameLevel = {
   L1: {
@@ -28,8 +30,8 @@ const GameLevel = {
   },
 };
 var currentLevel = GameLevel.L1;
-
 let gameFrame = 0;
+//Event and size config
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 window.addEventListener("resize", function () {
@@ -38,7 +40,6 @@ window.addEventListener("resize", function () {
   canvas.height = window.innerHeight;
 });
 const mouse = { x: canvas.width / 2, y: canvas.height / 2 };
-
 canvas.addEventListener("mousemove", (e) => {
   mouse.x = e.x;
   mouse.y = e.y;
@@ -46,28 +47,38 @@ canvas.addEventListener("mousemove", (e) => {
 
 //Defence
 const defenceObjects = [
-  { name: "Main Defence", damageCapability: 10, image: "main.png" },
-  { name: "Fire Astroyed", damageCapability: 20, image: "def2.png" },
+  {
+    name: "Main Defence",
+    damageCapability: 10,
+    image: "main.png",
+    sound: "def1.wav",
+  },
+  { name: "Missile", damageCapability: 20, image: "def2.png" },
 ];
-const mainDef = new Image(100, 104);
-mainDef.src = "res/defence/main.png";
+const mainDef = new Image(100, 100);
 const mainAudio = new Audio("res/audio/def1.wav");
 const DefenceArr = [];
 class Defence {
-  constructor(x, y) {
+  constructor(x, y, type) {
     this.x = x;
     this.y = y;
-    this.size = 10;
+    this.size = 20;
     this.color = "red";
+    this.imageDir = "res/defence/";
     this.speed = currentLevel.mainDefSpeed;
-    mainAudio.currentTime = 0;
-    mainAudio.play();
+    if (type == "main") {
+      this.img = "main.png";
+      mainAudio.currentTime = 0;
+      mainAudio.play();
+    } else if (type == "missile") {
+      this.img = "missile.png";
+    }
   }
   update() {
-    if (this.x > 0) {
+    if (this.x < canvas.width + 100) {
       this.x += this.speed;
     }
-    if (this.y > 0) {
+    if (this.y > -100) {
       this.y -= this.speed;
     }
   }
@@ -76,8 +87,21 @@ class Defence {
     ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.drawImage(mainDef, this.x - 80, this.y - 20);
+    //ctx.fill();
+    //ctx.drawImage(mainDef, this.x - 80, this.y - 20);
+    let f = 0; //Fream
+    mainDef.src = this.imageDir + this.img;
+    ctx.drawImage(
+      mainDef,
+      f * 100,
+      0,
+      100,
+      100,
+      this.x - 80,
+      this.y - 20,
+      100,
+      100
+    );
   }
 }
 
@@ -90,9 +114,13 @@ class Copter {
   constructor() {
     this.x = mouse.x;
     this.y = mouse.y;
-    this.size = 65;
+    this.imgDir = "res/copter/";
+    this.size = 50;
     this.angle = 0;
     this.life = 100;
+    this.onShield = true;
+    this.shieldTime = 50;
+    this.shieldCount = 0;
   }
 
   update() {
@@ -107,31 +135,79 @@ class Copter {
       this.y -= dy / 10;
       this.moving = true;
     }
+    //shield Time
+    //console.log(this.shieldTime);
+    if (this.onShield) {
+      this.shieldTime -= 1;
+      if (this.shieldTime <= 0) {
+        this.onShield = false;
+      }
+    } else {
+      this.shieldTime = 1000;
+    }
   }
 
   drow() {
-    /*ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();*/
-    ctx.drawImage(copterLeft, this.x - (100 / 2 + 7), this.y - (104 / 2 - 5));
+    //ctx.fillStyle = "white";
+
+    //ctx.beginPath();
+    //ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+
+    //ctx.fill();
+    ctx.drawImage(
+      copterLeft,
+      this.x - this.size,
+      this.y - this.size,
+      this.size * 2,
+      this.size * 2
+    );
+    if (this.onShield) {
+      this.shield();
+    }
   }
 
   trigerDefence() {
-    DefenceArr.push(new Defence(this.x + 75, this.y - 85));
+    DefenceArr.push(new Defence(this.x + 75, this.y - 85, "main"));
+  }
+  MissileTriger() {
+    DefenceArr.push(new Defence(this.x + 75, this.y - 85, "missile"));
+  }
+  shield() {
+    const shield = new Image();
+    shield.src = this.imgDir + "shield.png";
+    let siz = 150;
+    ctx.drawImage(shield, this.x - siz / 2, this.y - siz / 2, siz, siz);
   }
 }
+//void
 
 const copter = new Copter();
 //console.log(copter);
 canvas.addEventListener("click", (e) => {
   copter.trigerDefence();
 });
+window.addEventListener("keydown", (e) => {
+  e = e || window.event; //Get event
+  if (e.code == "KeyS") {
+    //S key for Active shield
+    if (!copter.onShield) {
+      if (copter.shieldCount > 0) {
+        copter.onShield = true;
+        copter.shieldCount--;
+      } else {
+        console.log("Not have any shield");
+      }
+    }
+  }
+  if (e.code == "KeyM") {
+    copter.MissileTriger();
+  }
+});
 
 function handleCopter() {
   copter.update();
   copter.drow();
-  console.log(copter.life);
+  console.log(copter.shieldCount);
 }
 function handleDefance() {
   if (DefenceArr.length > 0) {
@@ -139,7 +215,7 @@ function handleDefance() {
       DefenceArr[i].update();
       DefenceArr[i].drow();
       //console.log(DefenceArr[i].y, DefenceArr[i].x);
-      if (DefenceArr[i].y <= 0 || DefenceArr[i].x >= window.width) {
+      if (DefenceArr[i].y <= -100 || DefenceArr[i].x >= window.width + 100) {
         DefenceArr.splice(i, 1);
       }
     }
@@ -151,6 +227,7 @@ const enemyObjects = [
   { name: "Astroyed", damageCapability: 10, image: "ast1.png" },
   { name: "Fire Astroyed", damageCapability: 20, image: "ast2.png" },
   { name: "Small Fire Astroyed", damageCapability: 5, image: "ast3.png" },
+  { name: "Shield", damageCapability: 0, image: "shield.png" },
 ];
 
 const enemyArray = [];
@@ -206,17 +283,24 @@ function handleEnemy() {
       enemyArray.splice(i, 1);
     }
   }
-  for (let i = 0; i < enemyArray.length; i++) {
-    if (enemyArray[i].distance < enemyArray[i].radius + copter.size) {
-      //console.log("Hited the Copter");
-      if (!enemyArray[i].hited) {
-        //Damage Copter Life
-        copter.life -= enemyArray[i].type.damageCapability;
-        enemyArray[i].hited = true;
+  if (!copter.onShield) {
+    //Colision
+    for (let i = 0; i < enemyArray.length; i++) {
+      if (enemyArray[i].distance < enemyArray[i].radius + copter.size) {
+        //console.log("Hited the Copter");
+        if (!enemyArray[i].hited) {
+          //Damage Copter Life
+          if (enemyArray[i].type.name == "Shield" && copter.shieldCount < 3) {
+            copter.shieldCount++;
+          }
+          copter.life -= enemyArray[i].type.damageCapability;
+          enemyArray[i].hited = true;
+        }
+        enemyArray.splice(i, 1);
       }
-      enemyArray.splice(i, 1);
     }
   }
+
   for (let i = 0; i < enemyArray.length; i++) {
     enemyArray[i].update();
     enemyArray[i].draw();
