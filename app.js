@@ -3,16 +3,16 @@ const ctx = canvas.getContext("2d");
 //
 var score = 0;
 //Game Lavel Design
-const GameLevel = {
-  L1: {
+const GameLevel = [
+  {
     label: "Lavel 1",
-    enemySpeed: 5,
+    enemySpeed: 2,
     enemyPerFream: 50,
     copter: "copter1",
     bg: "bg1",
     mainDefSpeed: 5,
   },
-  L2: {
+  {
     label: "Lavel 2",
     enemySpeed: 7,
     enemyPerFream: 30,
@@ -20,7 +20,7 @@ const GameLevel = {
     bg: "bg2",
     mainDefSpeed: 7,
   },
-  L3: {
+  {
     label: "Lavel 3",
     enemySpeed: 12,
     enemyPerFream: 10,
@@ -28,8 +28,9 @@ const GameLevel = {
     bg: "bg3",
     mainDefSpeed: 10,
   },
-};
-var currentLevel = GameLevel.L1;
+];
+var currentLevelIndex = 0;
+var currentLevel = GameLevel[currentLevelIndex];
 let gameFrame = 0;
 //Event and size config
 canvas.width = window.innerWidth;
@@ -46,33 +47,31 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 //Defence
-const defenceObjects = [
-  {
+const defenceObjects = {
+  MainDef: {
     name: "Main Defence",
-    damageCapability: 10,
+    damageCapability: 5,
     image: "main.png",
     sound: "def1.wav",
   },
-  { name: "Missile", damageCapability: 20, image: "def2.png" },
-];
+  Missile: { name: "Missile", damageCapability: 20, image: "missile.png" },
+};
 const mainDef = new Image(100, 100);
 const mainAudio = new Audio("res/audio/def1.wav");
 const DefenceArr = [];
 class Defence {
-  constructor(x, y, type) {
+  constructor(x, y, weapon) {
     this.x = x;
     this.y = y;
     this.size = 20;
     this.color = "red";
     this.imageDir = "res/defence/";
     this.speed = currentLevel.mainDefSpeed;
-    if (type == "main") {
-      this.img = "main.png";
-      mainAudio.currentTime = 0;
-      mainAudio.play();
-    } else if (type == "missile") {
-      this.img = "missile.png";
-    }
+    this.weapon = weapon;
+    mainAudio.currentTime = 0;
+    mainAudio.play();
+    this.exe = false;
+    this.energy = this.weapon.damageCapability;
   }
   update() {
     if (this.x < canvas.width + 100) {
@@ -90,7 +89,7 @@ class Defence {
     //ctx.fill();
     //ctx.drawImage(mainDef, this.x - 80, this.y - 20);
     let f = 0; //Fream
-    mainDef.src = this.imageDir + this.img;
+    mainDef.src = this.imageDir + this.weapon.image;
     ctx.drawImage(
       mainDef,
       f * 100,
@@ -102,6 +101,9 @@ class Defence {
       100,
       100
     );
+  }
+  expl() {
+    console.log("defence Died");
   }
 }
 
@@ -167,10 +169,14 @@ class Copter {
   }
 
   trigerDefence() {
-    DefenceArr.push(new Defence(this.x + 75, this.y - 85, "main"));
+    DefenceArr.push(
+      new Defence(this.x + 75, this.y - 85, defenceObjects.MainDef)
+    );
   }
   MissileTriger() {
-    DefenceArr.push(new Defence(this.x + 75, this.y - 85, "missile"));
+    DefenceArr.push(
+      new Defence(this.x + 75, this.y - 85, defenceObjects.Missile)
+    );
   }
   shield() {
     const shield = new Image();
@@ -207,26 +213,23 @@ window.addEventListener("keydown", (e) => {
 function handleCopter() {
   copter.update();
   copter.drow();
-  console.log(copter.shieldCount);
-}
-function handleDefance() {
-  if (DefenceArr.length > 0) {
-    for (i = 0; i < DefenceArr.length; i++) {
-      DefenceArr[i].update();
-      DefenceArr[i].drow();
-      //console.log(DefenceArr[i].y, DefenceArr[i].x);
-      if (DefenceArr[i].y <= -100 || DefenceArr[i].x >= window.width + 100) {
-        DefenceArr.splice(i, 1);
-      }
-    }
+  //console.log(copter.shieldCount);
+  if (copter.life <= 0) {
+    console.log("Game Over");
   }
+  //console.log(copter.life);
 }
 
 // Enemis
 const enemyObjects = [
-  { name: "Astroyed", damageCapability: 10, image: "ast1.png" },
-  { name: "Fire Astroyed", damageCapability: 20, image: "ast2.png" },
-  { name: "Small Fire Astroyed", damageCapability: 5, image: "ast3.png" },
+  { name: "Astroyed", damageCapability: 10, image: "ast1.png", score: 2 },
+  { name: "Fire Astroyed", damageCapability: 20, image: "ast2.png", score: 4 },
+  {
+    name: "Small Fire Astroyed",
+    damageCapability: 5,
+    image: "ast3.png",
+    score: 1,
+  },
   { name: "Shield", damageCapability: 0, image: "shield.png" },
 ];
 
@@ -247,6 +250,8 @@ class Enemy {
     this.spriteWidth = 50;
     this.spriteHeight = 50;
     this.hited = false;
+    this.energy = this.type.damageCapability;
+    this.score = this.type.score;
   }
   update() {
     this.x += this.speed;
@@ -276,10 +281,21 @@ class Enemy {
       this.spriteHeight * 1
     );
   }
+  expl() {
+    score += this.score;
+    //console.log(this.type.damageCapability);
+    console.log("Enemy Died");
+  }
 }
 function handleEnemy() {
   for (let i = 0; i < enemyArray.length; i++) {
+    //console.log(enemyArray[i].type.damageCapability);
+
     if (enemyArray[i].y > canvas.height * 2) {
+      enemyArray.splice(i, 1);
+    }
+    if (enemyArray[i].energy <= 0 && enemyArray[i].type.name != "Shield") {
+      enemyArray[i].expl(); //
       enemyArray.splice(i, 1);
     }
   }
@@ -293,7 +309,9 @@ function handleEnemy() {
           if (enemyArray[i].type.name == "Shield" && copter.shieldCount < 3) {
             copter.shieldCount++;
           }
-          copter.life -= enemyArray[i].type.damageCapability;
+          if (copter.life > 0) {
+            copter.life -= enemyArray[i].energy;
+          }
           enemyArray[i].hited = true;
         }
         enemyArray.splice(i, 1);
@@ -311,6 +329,85 @@ function handleEnemy() {
   //console.log(enemyArray.length);
 }
 
+function handleDefance() {
+  if (DefenceArr.length > 0) {
+    for (i = 0; i < DefenceArr.length; i++) {
+      DefenceArr[i].update();
+      DefenceArr[i].drow();
+      //console.log(DefenceArr[i].y, DefenceArr[i].x);
+      for (j = 0; j < enemyArray.length; j++) {
+        let DEx = enemyArray[j].x - DefenceArr[i].x;
+        let DEy = enemyArray[j].y - DefenceArr[i].y;
+        let enD = Math.sqrt(DEx * DEx + DEy * DEy);
+        if (enemyArray[j].type.name != "Shield") {
+          if (enD < 25) {
+            if (!DefenceArr[i].exe) {
+              if (enemyArray[j].energy > 0) {
+                enemyArray[j].energy -= DefenceArr[i].energy;
+              }
+              if (DefenceArr[i].energy > 0) {
+                DefenceArr[i].energy -= enemyArray[j].energy;
+              }
+              DefenceArr[i].exe = true;
+            }
+          }
+        }
+      }
+
+      if (DefenceArr[i].energy <= 0) {
+        DefenceArr[i].expl(); //
+      }
+
+      if (
+        DefenceArr[i].y <= -100 ||
+        DefenceArr[i].x >= window.width + 100 ||
+        DefenceArr[i].energy <= 0
+      ) {
+        DefenceArr.splice(i, 1);
+      }
+    }
+  }
+}
+
+function PlayerInfo() {
+  let startPoint = canvas.width - 120;
+  let life = copter.life;
+  ctx.strokeStyle = "green";
+  if (life < 30) {
+    ctx.strokeStyle = "red";
+  } else if (life < 50) {
+    ctx.strokeStyle = "yellow";
+  }
+  let endPoint = startPoint + life;
+  ctx.beginPath();
+  ctx.moveTo(startPoint, canvas.height - 20);
+  ctx.lineWidth = 15;
+  //ctx.lineCap = "round";
+  ctx.lineTo(endPoint, canvas.height - 20);
+  ctx.stroke();
+
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.rect(canvas.width - 122, canvas.height - 30, 104, 20);
+  ctx.stroke();
+  //Life
+
+  ctx.font = "60px Verdana";
+  // Create gradient
+  var gradient = ctx.createLinearGradient(0, 0, 100, 0);
+  gradient.addColorStop("0", " magenta");
+  gradient.addColorStop("0.5", "blue");
+  gradient.addColorStop("1.0", "red");
+  // Fill with gradient
+  ctx.fillStyle = gradient;
+  ctx.fillText(score, 10, 70);
+  if (score > 50) {
+    currentLevelIndex++;
+    currentLevel = GameLevel[currentLevelIndex];
+    score = 0;
+  }
+}
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   //ctx.fillStyle='rgba(0,0,0,.5)';
@@ -318,6 +415,7 @@ function animate() {
   handleCopter();
   handleEnemy();
   handleDefance();
+  PlayerInfo();
   gameFrame++;
   requestAnimationFrame(animate);
 }
